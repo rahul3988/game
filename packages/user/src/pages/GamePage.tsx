@@ -10,6 +10,8 @@ import BettingChips from '../components/BettingChips';
 import BettingBoard from '../components/BettingBoard';
 import GameControls from '../components/GameControls';
 import GameTimer from '../components/GameTimer';
+import LiveViewers from '../components/LiveViewers';
+import ActivityBooster from '../components/ActivityBooster';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatCurrency } from '@win5x/common';
 
@@ -18,7 +20,7 @@ const GamePage: React.FC = () => {
   const { socket, isConnected } = useSocket();
   
   // Game state
-  const [selectedChip, setSelectedChip] = useState(10);
+  const [selectedChip, setSelectedChip] = useState(20);
   const [currentBets, setCurrentBets] = useState<Record<string, number>>({});
   const [lastBets, setLastBets] = useState<Record<string, number>>({});
   const [gameState, setGameState] = useState<any>(null);
@@ -188,6 +190,12 @@ const GamePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 p-4">
+      {/* Activity Booster - invisible component that triggers fake activity */}
+      <ActivityBooster 
+        gamePhase={timerState?.phase || gameState?.status}
+        roundNumber={gameState?.roundNumber}
+      />
+      
       <div className="max-w-7xl mx-auto">
         {/* Header with balance and connection status */}
         <div className="flex justify-between items-center mb-6">
@@ -222,9 +230,14 @@ const GamePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Left Column - Timer and Wheel */}
-          <div className="xl:col-span-1 space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* Left Column - Live Viewers */}
+          <div className="xl:col-span-1">
+            <LiveViewers />
+          </div>
+
+          {/* Middle Column - Timer and Wheel */}
+          <div className="xl:col-span-2 space-y-6">
             {/* Game Timer */}
             <GameTimer
               phase={timerState?.phase || gameState?.status || 'betting'}
@@ -244,8 +257,8 @@ const GamePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Columns - Betting Interface */}
-          <div className="xl:col-span-2 space-y-6">
+          {/* Right Column - Betting Interface */}
+          <div className="xl:col-span-1 space-y-6">
             {/* Betting Chips */}
             <BettingChips
               selectedChip={selectedChip}

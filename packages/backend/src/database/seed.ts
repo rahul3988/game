@@ -43,7 +43,7 @@ async function main() {
         bettingDuration: parseInt(process.env.DEFAULT_BETTING_DURATION || '30'),
         spinDuration: parseInt(process.env.DEFAULT_SPIN_DURATION || '10'),
         resultDuration: parseInt(process.env.DEFAULT_RESULT_DURATION || '15'),
-        minBetAmount: parseFloat(process.env.MIN_BET_AMOUNT || '1'),
+        minBetAmount: parseFloat(process.env.MIN_BET_AMOUNT || '10'),
         maxBetAmount: parseFloat(process.env.MAX_BET_AMOUNT || '10000'),
         payoutMultiplier: parseFloat(process.env.PAYOUT_MULTIPLIER || '5'),
         cashbackPercentage: parseFloat(process.env.CASHBACK_PERCENTAGE || '10'),

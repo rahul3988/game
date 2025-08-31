@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import CustomBetInput from './CustomBetInput';
 
 interface BettingChipsProps {
   selectedChip: number;
@@ -13,12 +14,12 @@ const BettingChips: React.FC<BettingChipsProps> = ({
   disabled = false,
 }) => {
   const chips = [
-    { value: 1, color: 'chip-1', label: '₹1' },
-    { value: 5, color: 'chip-5', label: '₹5' },
     { value: 10, color: 'chip-10', label: '₹10' },
-    { value: 25, color: 'chip-25', label: '₹25' },
+    { value: 20, color: 'chip-20', label: '₹20' },
     { value: 50, color: 'chip-50', label: '₹50' },
     { value: 100, color: 'chip-100', label: '₹100' },
+    { value: 200, color: 'chip-200', label: '₹200' },
+    { value: 500, color: 'chip-500', label: '₹500' },
   ];
 
   return (
@@ -59,6 +60,16 @@ const BettingChips: React.FC<BettingChipsProps> = ({
             )}
           </motion.button>
         ))}
+      </div>
+      
+      {/* Custom Bet Input */}
+      <div className="w-full mt-4 pt-4 border-t border-gray-700">
+        <CustomBetInput
+          onCustomBet={onChipSelect}
+          disabled={disabled}
+          minAmount={10}
+          maxAmount={10000}
+        />
       </div>
     </div>
   );

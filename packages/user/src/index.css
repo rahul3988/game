@@ -173,19 +173,11 @@
     @apply rounded-full border-4 font-bold text-white cursor-pointer transition-all duration-200 transform hover:scale-110 active:scale-95;
   }
   
-  .chip-1 {
-    @apply bg-white text-gray-900 border-gray-300;
-  }
-  
-  .chip-5 {
-    @apply bg-red-600 border-red-400;
-  }
-  
   .chip-10 {
     @apply bg-blue-600 border-blue-400;
   }
   
-  .chip-25 {
+  .chip-20 {
     @apply bg-green-600 border-green-400;
   }
   
@@ -194,6 +186,14 @@
   }
   
   .chip-100 {
+    @apply bg-red-600 border-red-400;
+  }
+  
+  .chip-200 {
+    @apply bg-orange-600 border-orange-400;
+  }
+  
+  .chip-500 {
     @apply bg-gold-600 border-gold-400;
   }
 
