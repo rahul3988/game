@@ -27,6 +27,7 @@ model User {
   depositRequests   DepositRequest[]
   withdrawalRequests WithdrawalRequest[]
   paymentAuditLogs  PaymentAuditLog[]
+  notifications     Notification[]
 
   @@map("users")
 }
@@ -232,6 +233,34 @@ model PaymentAuditLog {
   user  User?  @relation(fields: [userId], references: [id])
 
   @@map("payment_audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // 'deposit_approved', 'withdrawal_rejected', etc.
+  title     String
+  message   String
+  data      String?  // JSON string for additional data
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model SecurityLog {
+  id        String   @id @default(uuid())
+  type      String   // 'login_attempt', 'failed_login', 'suspicious_betting', etc.
+  userId    String?
+  details   String?  // JSON string
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("security_logs")
 }
 
 // Enums
