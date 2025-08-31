@@ -93,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </span>
               </div>
               
-              {/* Balance */}
+              {/* Balance with Deposit/Withdraw */}
               <div className="bg-gray-700 rounded-lg px-3 py-2">
                 <div className="flex items-center space-x-2">
                   <Wallet className="h-4 w-4 text-gold-400" />
@@ -106,6 +106,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     Credit: {formatCurrency(user.gameCredit)}
                   </div>
                 )}
+                <div className="flex space-x-1 mt-2">
+                  <Link
+                    to="/deposit"
+                    className="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors"
+                  >
+                    Deposit
+                  </Link>
+                  <Link
+                    to="/withdraw"
+                    className="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded transition-colors"
+                  >
+                    Withdraw
+                  </Link>
+                </div>
               </div>
               
               {/* User menu */}

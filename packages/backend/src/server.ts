@@ -15,6 +15,7 @@ import { authRoutes } from './controllers/auth';
 import { userRoutes } from './controllers/user';
 import { gameRoutes } from './controllers/game';
 import { adminRoutes } from './controllers/admin';
+import { paymentRoutes } from './controllers/payment';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { GameEngine } from './services/GameEngine';
@@ -73,6 +74,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

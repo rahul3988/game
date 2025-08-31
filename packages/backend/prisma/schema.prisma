@@ -22,8 +22,11 @@ model User {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  bets         Bet[]
-  transactions Transaction[]
+  bets              Bet[]
+  transactions      Transaction[]
+  depositRequests   DepositRequest[]
+  withdrawalRequests WithdrawalRequest[]
+  paymentAuditLogs  PaymentAuditLog[]
 
   @@map("users")
 }
@@ -42,6 +45,9 @@ model Admin {
   // Relations
   approvedTransactions Transaction[] @relation("ApprovedBy")
   auditLogs           AuditLog[]
+  approvedDeposits    DepositRequest[]
+  approvedWithdrawals WithdrawalRequest[]
+  paymentAuditLogs    PaymentAuditLog[]
 
   @@map("admins")
 }
@@ -144,6 +150,90 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model PaymentMethod {
+  id           String   @id @default(uuid())
+  name         String   @unique // 'phonepe', 'googlepay', 'paytm', 'usdt'
+  displayName  String
+  isActive     Boolean  @default(true)
+  qrCodeUrl    String?  // URL to QR code image
+  qrCodeData   String?  // QR code data/payload
+  walletAddress String? // For USDT or other crypto
+  instructions String?  // Payment instructions
+  minAmount    Float    @default(10.00)
+  maxAmount    Float    @default(100000.00)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  depositRequests DepositRequest[]
+
+  @@map("payment_methods")
+}
+
+model DepositRequest {
+  id              String         @id @default(uuid())
+  userId          String
+  paymentMethodId String
+  amount          Float
+  utrCode         String         // Unique Transaction Reference
+  status          DepositStatus  @default(PENDING)
+  adminNotes      String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedReason  String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  approver      Admin?        @relation(fields: [approvedBy], references: [id])
+
+  @@map("deposit_requests")
+}
+
+model WithdrawalRequest {
+  id              String           @id @default(uuid())
+  userId          String
+  amount          Float
+  paymentMethod   String           // User's preferred method
+  accountDetails  String           // JSON string with payment details
+  status          WithdrawalStatus @default(PENDING)
+  adminNotes      String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  completedAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approver Admin? @relation(fields: [approvedBy], references: [id])
+
+  @@map("withdrawal_requests")
+}
+
+model PaymentAuditLog {
+  id         String   @id @default(uuid())
+  entityType String   // 'deposit_request', 'withdrawal_request', 'payment_method'
+  entityId   String
+  action     String   // 'created', 'approved', 'rejected', 'updated'
+  oldData    String?  // JSON string
+  newData    String?  // JSON string
+  adminId    String?
+  userId     String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  admin Admin? @relation(fields: [adminId], references: [id])
+  user  User?  @relation(fields: [userId], references: [id])
+
+  @@map("payment_audit_logs")
+}
+
 // Enums
 enum AdminRole {
   SUPER_ADMIN
@@ -199,4 +289,19 @@ enum TransactionStatus {
   REJECTED
   COMPLETED
   CANCELLED
+}
+
+enum DepositStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
 }

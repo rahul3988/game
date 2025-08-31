@@ -14,7 +14,8 @@ import {
   X,
   Wifi,
   WifiOff,
-  AlertTriangle
+  AlertTriangle,
+  Wallet
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
@@ -41,6 +42,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       href: '/users', 
       icon: Users,
       permission: 'MANAGE_USERS' 
+    },
+    { 
+      name: 'Payments', 
+      href: '/payments', 
+      icon: Wallet,
+      permission: 'MANAGE_DEPOSITS' 
     },
     { 
       name: 'Bets', 

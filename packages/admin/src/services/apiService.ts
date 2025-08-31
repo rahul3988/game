@@ -145,4 +145,58 @@ export const apiService = {
     const response = await api.get('/api/admin/system-status');
     return response.data.data;
   },
+
+  // Payment Management
+  async getAllPaymentMethods() {
+    const response = await api.get('/api/payment/admin/methods');
+    return response.data.data;
+  },
+
+  async updatePaymentMethod(id: string, data: any) {
+    const response = await api.put(`/api/payment/admin/methods/${id}`, data);
+    return response.data.data;
+  },
+
+  async getAdminDeposits(params: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    userId?: string;
+  } = {}) {
+    const response = await api.get('/api/payment/admin/deposits', { params });
+    return response.data.data;
+  },
+
+  async processDepositRequest(id: string, action: 'approve' | 'reject', notes?: string, reason?: string) {
+    const response = await api.put(`/api/payment/admin/deposits/${id}`, {
+      action,
+      notes,
+      reason,
+    });
+    return response.data.data;
+  },
+
+  async getAdminWithdrawals(params: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+    userId?: string;
+  } = {}) {
+    const response = await api.get('/api/payment/admin/withdrawals', { params });
+    return response.data.data;
+  },
+
+  async processWithdrawalRequest(id: string, action: 'approve' | 'reject', notes?: string, reason?: string) {
+    const response = await api.put(`/api/payment/admin/withdrawals/${id}`, {
+      action,
+      notes,
+      reason,
+    });
+    return response.data.data;
+  },
+
+  async getPaymentStats() {
+    const response = await api.get('/api/payment/admin/stats');
+    return response.data.data;
+  },
 };

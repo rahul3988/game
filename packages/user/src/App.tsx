@@ -8,6 +8,8 @@ import GamePage from './pages/GamePage';
 import ProfilePage from './pages/ProfilePage';
 import TransactionsPage from './pages/TransactionsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import DepositPage from './pages/DepositPage';
+import WithdrawPage from './pages/WithdrawPage';
 import LoadingSpinner from './components/LoadingSpinner';
 
 function App() {
@@ -39,6 +41,8 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/deposit" element={<DepositPage />} />
+        <Route path="/withdraw" element={<WithdrawPage />} />
         <Route path="*" element={<Navigate to="/game" replace />} />
       </Routes>
     </Layout>

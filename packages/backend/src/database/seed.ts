@@ -54,6 +54,51 @@ async function main() {
 
     logger.info('Game configuration created/updated');
 
+    // Create default payment methods
+    const paymentMethods = [
+      {
+        name: 'phonepe',
+        displayName: 'PhonePe',
+        instructions: 'Scan the QR code with PhonePe app and complete the payment. Enter the UTR code from your payment confirmation.',
+        minAmount: 10.00,
+        maxAmount: 50000.00,
+        qrCodeUrl: 'https://example.com/phonepe-qr.png', // Replace with actual QR code URL
+      },
+      {
+        name: 'googlepay',
+        displayName: 'Google Pay',
+        instructions: 'Scan the QR code with Google Pay app and complete the payment. Enter the UTR code from your payment confirmation.',
+        minAmount: 10.00,
+        maxAmount: 50000.00,
+        qrCodeUrl: 'https://example.com/googlepay-qr.png', // Replace with actual QR code URL
+      },
+      {
+        name: 'paytm',
+        displayName: 'Paytm',
+        instructions: 'Scan the QR code with Paytm app and complete the payment. Enter the UTR code from your payment confirmation.',
+        minAmount: 10.00,
+        maxAmount: 50000.00,
+        qrCodeUrl: 'https://example.com/paytm-qr.png', // Replace with actual QR code URL
+      },
+      {
+        name: 'usdt',
+        displayName: 'USDT (TRC-20)',
+        instructions: 'Send USDT to the wallet address shown. Enter the transaction hash as UTR code.',
+        minAmount: 50.00,
+        maxAmount: 100000.00,
+        walletAddress: 'TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx', // Replace with actual USDT wallet
+      },
+    ];
+
+    for (const methodData of paymentMethods) {
+      const method = await prisma.paymentMethod.upsert({
+        where: { name: methodData.name },
+        update: {},
+        create: methodData,
+      });
+      logger.info(`Payment method created/updated: ${method.displayName}`);
+    }
+
     // Create sample users for testing (only in development)
     if (process.env.NODE_ENV === 'development') {
       const testUsers = [

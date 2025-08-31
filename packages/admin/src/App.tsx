@@ -10,6 +10,7 @@ import TransactionsPage from './pages/TransactionsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import AuditLogsPage from './pages/AuditLogsPage';
+import PaymentManagementPage from './pages/PaymentManagementPage';
 import LoadingSpinner from './components/LoadingSpinner';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/payments" element={<PaymentManagementPage />} />
         <Route path="/bets" element={<BetsPage />} />
         <Route path="/rounds" element={<RoundsPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
