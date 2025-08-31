@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  username    String   @unique
+  email       String   @unique
+  password    String
+  balance     Float    @default(0)
+  gameCredit  Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  bets         Bet[]
+  transactions Transaction[]
+
+  @@map("users")
+}
+
+model Admin {
+  id          String           @id @default(uuid())
+  username    String           @unique
+  email       String           @unique
+  password    String
+  role        AdminRole        @default(ADMIN)
+  permissions AdminPermission[]
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  approvedTransactions Transaction[] @relation("ApprovedBy")
+  auditLogs           AuditLog[]
+
+  @@map("admins")
+}
+
+model GameRound {
+  id               String          @id @default(uuid())
+  roundNumber      Int             @unique
+  status           GameRoundStatus @default(BETTING)
+  bettingStartTime DateTime        @default(now())
+  bettingEndTime   DateTime?
+  spinStartTime    DateTime?
+  resultTime       DateTime?
+  winningNumber    Int?
+  winningColor     String?
+  isWinningOdd     Boolean?
+  totalBetAmount   Float           @default(0)
+  totalPayout      Float           @default(0)
+  houseProfitLoss  Float           @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  bets Bet[]
+
+  @@map("game_rounds")
+}
+
+model Bet {
+  id              String    @id @default(uuid())
+  userId          String
+  roundId         String
+  betType         BetType
+  betValue        String // JSON string to handle number | string
+  amount          Float
+  potentialPayout Float
+  isWinner        Boolean?
+  actualPayout    Float     @default(0)
+  status          BetStatus @default(PENDING)
+  placedAt        DateTime  @default(now())
+  settledAt       DateTime?
+
+  // Relations
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round GameRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@map("bets")
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  userId      String
+  type        TransactionType
+  amount      Float
+  status      TransactionStatus @default(PENDING)
+  description String
+  reference   String?
+  approvedBy  String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approver Admin? @relation("ApprovedBy", fields: [approvedBy], references: [id])
+
+  @@map("transactions")
+}
+
+model GameConfig {
+  id                String   @id @default(uuid())
+  bettingDuration   Int      @default(30)
+  spinDuration      Int      @default(10)
+  resultDuration    Int      @default(15)
+  minBetAmount      Float    @default(1)
+  maxBetAmount      Float    @default(10000)
+  payoutMultiplier  Float    @default(5)
+  cashbackPercentage Float   @default(10)
+  maxExposure       Float    @default(1000000)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("game_configs")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  action    String
+  target    String?
+  targetId  String?
+  oldValue  String? // JSON string
+  newValue  String? // JSON string
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  admin Admin @relation(fields: [adminId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Enums
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+}
+
+enum AdminPermission {
+  MANAGE_BETS
+  MANAGE_USERS
+  MANAGE_WITHDRAWALS
+  MANAGE_DEPOSITS
+  VIEW_ANALYTICS
+  EMERGENCY_CONTROLS
+  MANAGE_TIMERS
+}
+
+enum GameRoundStatus {
+  BETTING
+  BETTING_CLOSED
+  SPINNING
+  COMPLETED
+  CANCELLED
+}
+
+enum BetType {
+  NUMBER
+  ODD_EVEN
+  COLOR
+}
+
+enum BetStatus {
+  PENDING
+  WON
+  LOST
+  CANCELLED
+  REFUNDED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  BET_PLACED
+  BET_WON
+  BET_LOST
+  CASHBACK
+  ADMIN_ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
