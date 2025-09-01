@@ -219,5 +219,8 @@ INSERT INTO payment_methods (name, display_name, instructions, min_amount, max_a
 ('paytm', 'Paytm', 'Scan QR code with Paytm app. Enter UTR code after payment.', 10.00, 50000.00),
 ('usdt', 'USDT (TRC-20)', 'Send USDT to wallet address. Enter transaction hash as UTR.', 50.00, 100000.00);
 
-INSERT INTO game_config (betting_duration, spin_duration, result_duration, min_bet_amount, max_bet_amount, payout_multiplier, cashback_percentage, max_exposure, is_active)
-VALUES (30, 10, 15, 10.00, 10000.00, 5.00, 10.00, 1000000.00, true);
+-- Update game config to include countdown phase
+ALTER TABLE game_config ADD COLUMN countdown_duration INTEGER DEFAULT 10;
+
+INSERT INTO game_config (betting_duration, countdown_duration, spin_duration, result_duration, min_bet_amount, max_bet_amount, payout_multiplier, cashback_percentage, max_exposure, is_active)
+VALUES (30, 10, 10, 10, 10.00, 10000.00, 5.00, 10.00, 1000000.00, true);

@@ -521,14 +521,41 @@ body {
     box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
 }
 
-.timer-card.spinning {
+.timer-card.countdown {
     border-color: #f59e0b;
     box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    animation: countdownPulse 1s ease-in-out infinite alternate;
+}
+
+.timer-card.spinning {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+    animation: spinningGlow 2s ease-in-out infinite alternate;
 }
 
 .timer-card.result {
     border-color: #3b82f6;
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+@keyframes countdownPulse {
+    0% { 
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        transform: scale(1);
+    }
+    100% { 
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+        transform: scale(1.02);
+    }
+}
+
+@keyframes spinningGlow {
+    0% { 
+        box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+    }
+    100% { 
+        box-shadow: 0 0 50px rgba(139, 92, 246, 0.8);
+    }
 }
 
 .timer-icon {
@@ -674,6 +701,32 @@ body {
     100% {
         opacity: 1;
         transform: scale(1);
+    }
+}
+
+@keyframes celebration {
+    0%, 100% {
+        transform: scale(1);
+    }
+    25% {
+        transform: scale(1.1) rotate(-2deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(2deg);
+    }
+    75% {
+        transform: scale(1.1) rotate(-1deg);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
     }
 }
 

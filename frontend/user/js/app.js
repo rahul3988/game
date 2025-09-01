@@ -210,14 +210,31 @@ class Win5xApp {
             this.updateTimer(timer);
         });
 
+        this.socket.on('countdown_update', (countdown) => {
+            this.updateCountdown(countdown);
+        });
+
+        this.socket.on('spin_start', (spinData) => {
+            this.handleSpinStart(spinData);
+        });
+
         this.socket.on('bet_distribution', (distribution) => {
             this.updateBetDistribution(distribution);
         });
 
         this.socket.on('balance_update', (balance) => {
-            this.currentUser.balance = balance.balance;
-            this.currentUser.gameCredit = balance.gameCredit;
-            this.updateUserInterface();
+            // Handle both global and user-specific balance updates
+            if (balance.userId && balance.userId === this.currentUser.id) {
+                // User won money
+                this.currentUser.balance += balance.payout;
+                this.updateUserInterface();
+                showNotification(`🎉 You won ₹${balance.payout} on your ₹${balance.betAmount} bet!`, 'success', 8000);
+            } else if (balance.balance !== undefined) {
+                // General balance update
+                this.currentUser.balance = balance.balance;
+                this.currentUser.gameCredit = balance.gameCredit;
+                this.updateUserInterface();
+            }
         });
 
         this.socket.on('bet_placed', (bet) => {
@@ -226,6 +243,13 @@ class Win5xApp {
 
         this.socket.on('round_result', (result) => {
             this.handleRoundResult(result);
+        });
+
+        this.socket.on('user_won', (data) => {
+            if (data.userId === this.currentUser.id) {
+                // Trigger celebration effects
+                this.triggerWinCelebration();
+            }
         });
 
         this.socket.on('error', (error) => {
@@ -265,24 +289,86 @@ class Win5xApp {
                 timerCard.classList.add('betting');
                 document.getElementById('timer-title').textContent = 'Place Your Bets';
                 document.getElementById('timer-icon').className = 'fas fa-clock';
+                document.getElementById('timer-description').textContent = 'Select chips and place your bets';
                 break;
-            case 'betting_closed':
+                
+            case 'countdown':
                 phaseElement.textContent = 'Betting Closed';
-                timerCard.classList.add('spinning');
+                timerCard.classList.add('countdown');
+                document.getElementById('timer-title').textContent = 'Preparing to Spin';
+                document.getElementById('timer-icon').className = 'fas fa-hourglass-half';
+                document.getElementById('timer-description').textContent = 'Calculating results...';
                 break;
+                
             case 'spinning':
                 phaseElement.textContent = 'Spinning...';
                 timerCard.classList.add('spinning');
-                document.getElementById('timer-title').textContent = 'Spinning...';
+                document.getElementById('timer-title').textContent = 'Wheel is Spinning';
                 document.getElementById('timer-icon').className = 'fas fa-sync fa-spin';
-                this.spinWheel();
+                document.getElementById('timer-description').textContent = 'Watch the wheel spin!';
+                // Hide timer during spinning
+                document.getElementById('timer-value').style.visibility = 'hidden';
                 break;
+                
+            case 'result':
+                phaseElement.textContent = 'Results';
+                timerCard.classList.add('result');
+                document.getElementById('timer-title').textContent = 'Round Results';
+                document.getElementById('timer-icon').className = 'fas fa-trophy';
+                document.getElementById('timer-description').textContent = 'Check your winnings!';
+                document.getElementById('timer-value').style.visibility = 'visible';
+                break;
+                
             case 'completed':
                 phaseElement.textContent = 'Round Complete';
-                timerCard.classList.add('result');
-                document.getElementById('timer-title').textContent = 'Results';
-                document.getElementById('timer-icon').className = 'fas fa-trophy';
                 break;
+        }
+    }
+
+    updateCountdown(countdown) {
+        const timerValue = document.getElementById('timer-value');
+        const progressBar = document.getElementById('timer-progress-bar');
+        
+        // Show reverse countdown (10 → 0)
+        timerValue.textContent = countdown.timeRemaining;
+        timerValue.style.visibility = 'visible';
+        
+        // Calculate progress for countdown
+        const progress = ((gameConfig.countdownDuration - countdown.timeRemaining) / gameConfig.countdownDuration) * 100;
+        progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+        
+        // Add urgency styling for countdown
+        timerValue.style.color = '#f59e0b';
+        if (countdown.timeRemaining <= 3) {
+            timerValue.style.color = '#ef4444';
+            timerValue.style.animation = 'pulse 0.5s infinite';
+        } else {
+            timerValue.style.animation = 'none';
+        }
+    }
+
+    handleSpinStart(spinData) {
+        console.log('Spin started with target:', spinData.winningNumber);
+        
+        // Start wheel animation to land on the winning number
+        if (window.rouletteGame) {
+            window.rouletteGame.spinToNumber(spinData.winningNumber, spinData.duration * 1000);
+        }
+    }
+
+    triggerWinCelebration() {
+        // Add win celebration effects
+        const winningDisplay = document.getElementById('winning-display');
+        if (winningDisplay) {
+            winningDisplay.style.animation = 'celebration 2s ease-in-out';
+            setTimeout(() => {
+                winningDisplay.style.animation = '';
+            }, 2000);
+        }
+        
+        // Trigger fake activity burst
+        if (window.fakeActivity) {
+            fakeActivity.triggerBurst(20000);
         }
     }
 

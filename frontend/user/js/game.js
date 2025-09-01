@@ -98,9 +98,13 @@ class RouletteGame {
     }
 
     placeBet(betType, betValue) {
-        // Validate game state
+        // Validate game state - only allow betting during 'betting' phase
         if (!this.currentRound || this.currentRound.status !== 'betting') {
-            showNotification('Betting is not available right now', 'warning');
+            if (this.currentRound && this.currentRound.status === 'countdown') {
+                showNotification('Betting is closed! Results are being calculated.', 'warning');
+            } else {
+                showNotification('Betting is not available right now', 'warning');
+            }
             return false;
         }
 
@@ -224,9 +228,11 @@ class RouletteGame {
         const timerTitle = document.getElementById('timer-title');
         const timerIcon = document.getElementById('timer-icon');
         const timerDescription = document.getElementById('timer-description');
+        const timerValue = document.getElementById('timer-value');
         
         // Reset classes
         timerCard.className = 'timer-card';
+        timerValue.style.visibility = 'visible';
         
         switch (phase) {
             case 'betting':
@@ -237,29 +243,39 @@ class RouletteGame {
                 timerDescription.textContent = 'Select chips and place your bets';
                 break;
                 
-            case 'betting_closed':
+            case 'countdown':
                 phaseElement.textContent = 'Betting Closed';
-                timerCard.classList.add('spinning');
+                timerCard.classList.add('countdown');
                 timerTitle.textContent = 'Preparing to Spin';
                 timerIcon.className = 'fas fa-hourglass-half';
-                timerDescription.textContent = 'Get ready for the spin!';
+                timerDescription.textContent = 'Calculating results...';
                 break;
                 
             case 'spinning':
                 phaseElement.textContent = 'Spinning...';
                 timerCard.classList.add('spinning');
-                timerTitle.textContent = 'Spinning...';
+                timerTitle.textContent = 'Wheel is Spinning';
                 timerIcon.className = 'fas fa-sync fa-spin';
-                timerDescription.textContent = 'The wheel is spinning...';
-                this.spinWheel();
+                timerDescription.textContent = 'Watch the wheel spin!';
+                // Hide timer during spinning - no countdown shown
+                timerValue.style.visibility = 'hidden';
+                break;
+                
+            case 'result':
+                phaseElement.textContent = 'Results';
+                timerCard.classList.add('result');
+                timerTitle.textContent = 'Round Results';
+                timerIcon.className = 'fas fa-trophy';
+                timerDescription.textContent = 'Check your winnings!';
+                timerValue.style.visibility = 'visible';
                 break;
                 
             case 'completed':
                 phaseElement.textContent = 'Round Complete';
                 timerCard.classList.add('result');
-                timerTitle.textContent = 'Results';
-                timerIcon.className = 'fas fa-trophy';
-                timerDescription.textContent = 'Check your winnings!';
+                timerTitle.textContent = 'Next Round Starting Soon';
+                timerIcon.className = 'fas fa-clock';
+                timerDescription.textContent = 'Get ready for the next round...';
                 break;
                 
             default:
@@ -300,28 +316,45 @@ class RouletteGame {
         }
     }
 
-    spinWheel() {
+    spinToNumber(targetNumber, duration = 10000) {
         if (this.isSpinning) return;
         
         this.isSpinning = true;
         const wheel = document.getElementById('roulette-wheel');
         
-        // Calculate spin rotation
-        const spins = 5 + Math.random() * 3; // 5-8 full rotations
-        const extraRotation = Math.random() * 360; // Random final position
-        const finalRotation = this.wheelRotation + (spins * 360) + extraRotation;
+        // Calculate target position for the winning number
+        // Numbers are positioned at: 0°, 36°, 72°, 108°, 144°, 180°, 216°, 252°, 288°, 324°
+        const numberPositions = {
+            0: 0, 1: 36, 2: 72, 3: 108, 4: 144,
+            5: 180, 6: 216, 7: 252, 8: 288, 9: 324
+        };
         
-        // Apply rotation
-        wheel.style.transition = 'transform 4s cubic-bezier(0.23, 1, 0.32, 1)';
+        const targetPosition = numberPositions[targetNumber];
+        
+        // Calculate final rotation to land on target
+        const spins = 5 + Math.random() * 3; // 5-8 full rotations for drama
+        const finalRotation = this.wheelRotation + (spins * 360) + (360 - targetPosition); // Subtract because wheel spins clockwise
+        
+        console.log(`Spinning wheel to number ${targetNumber} (position: ${targetPosition}°)`);
+        
+        // Apply smooth rotation animation
+        wheel.style.transition = `transform ${duration / 1000}s cubic-bezier(0.23, 1, 0.32, 1)`;
         wheel.style.transform = `rotate(${finalRotation}deg)`;
         
-        this.wheelRotation = finalRotation % 360; // Normalize rotation
+        this.wheelRotation = finalRotation % 360;
         
         // Reset spinning state after animation
         setTimeout(() => {
             this.isSpinning = false;
             wheel.style.transition = 'none';
-        }, 4000);
+            console.log(`Wheel stopped on number ${targetNumber}`);
+        }, duration);
+    }
+
+    // Legacy method for backwards compatibility
+    spinWheel() {
+        // This method is now controlled by backend via spinToNumber
+        console.warn('spinWheel() called - should use spinToNumber() with backend data');
     }
 
     handleRoundResult(result) {

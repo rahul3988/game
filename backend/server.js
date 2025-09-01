@@ -79,13 +79,17 @@ let currentRound = null;
 let gameRunning = false;
 let gameConfig = {
   bettingDuration: 30,
+  countdownDuration: 10,
   spinDuration: 10,
-  resultDuration: 15,
+  resultDuration: 10,
   minBetAmount: 10,
   maxBetAmount: 10000,
   payoutMultiplier: 5,
   cashbackPercentage: 10
 };
+
+// Store pre-calculated winners securely
+let roundWinners = new Map(); // roundId -> winningNumber
 
 // Utility functions
 const generateId = () => {
@@ -228,68 +232,62 @@ class GameEngine {
       // Emit to all clients
       io.emit('round_update', currentRound);
       
-      // Set timer for betting phase
+      // Set timer for betting phase (30s)
       setTimeout(() => {
-        this.closeBetting(currentRound.id);
+        this.startCountdown(currentRound.id);
       }, gameConfig.bettingDuration * 1000);
 
-      // Timer updates
+      // Timer updates for betting phase
       this.startTimerUpdates(currentRound.id, 'betting', gameConfig.bettingDuration);
       
-      console.log(`Started new round ${this.roundCounter}`);
+      console.log(`Started new round ${this.roundCounter} - BETTING phase`);
       
     } catch (error) {
       console.error('Failed to start new round:', error);
     }
   }
 
-  async closeBetting(roundId) {
+  async startCountdown(roundId) {
     try {
+      // BETTING -> COUNTDOWN: Stop accepting bets and calculate winner
       const result = await pool.query(`
-        UPDATE game_rounds SET status = 'betting_closed', betting_end_time = NOW()
+        UPDATE game_rounds SET status = 'countdown', betting_end_time = NOW()
         WHERE id = $1 RETURNING *
       `, [roundId]);
 
       const round = result.rows[0];
-      io.emit('round_update', round);
       
+      // Secretly calculate winner based on least chosen number
+      const winningNumber = await this.calculateSecretWinner(roundId);
+      
+      // Store winner securely (not in database yet)
+      roundWinners.set(roundId, winningNumber);
+      
+      // Emit countdown phase to clients (no winner revealed)
+      io.emit('round_update', { ...round, status: 'countdown' });
+      
+      // Start countdown timer (10s reverse countdown)
+      this.startCountdownTimer(roundId, gameConfig.countdownDuration);
+      
+      // After countdown, start spinning
       setTimeout(() => {
         this.startSpinning(roundId);
-      }, 1000);
+      }, gameConfig.countdownDuration * 1000);
+
+      console.log(`Round ${round.round_number} - COUNTDOWN phase (winner: ${winningNumber} - SECRET)`);
 
     } catch (error) {
-      console.error('Failed to close betting:', error);
+      console.error('Failed to start countdown:', error);
     }
   }
 
-  async startSpinning(roundId) {
-    try {
-      const result = await pool.query(`
-        UPDATE game_rounds SET status = 'spinning', spin_start_time = NOW()
-        WHERE id = $1 RETURNING *
-      `, [roundId]);
-
-      const round = result.rows[0];
-      io.emit('round_update', round);
-      
-      setTimeout(() => {
-        this.completeRound(round);
-      }, gameConfig.spinDuration * 1000);
-
-      this.startTimerUpdates(roundId, 'spinning', gameConfig.spinDuration);
-
-    } catch (error) {
-      console.error('Failed to start spinning:', error);
-    }
-  }
-
-  async completeRound(round) {
+  async calculateSecretWinner(roundId) {
     try {
       // Get all bets for this round
-      const betsResult = await pool.query('SELECT * FROM bets WHERE round_id = $1 AND status = $2', [round.id, 'pending']);
+      const betsResult = await pool.query('SELECT * FROM bets WHERE round_id = $1 AND status = $2', [roundId, 'pending']);
       const bets = betsResult.rows;
 
-      // Calculate bet distribution
+      // Calculate bet distribution by number
       const numberDistribution = {};
       for (let i = 0; i <= 9; i++) {
         numberDistribution[i.toString()] = 0;
@@ -304,15 +302,87 @@ class GameEngine {
         }
       });
 
-      // Determine winning number
+      // Determine least chosen number (winner)
       const winningNumber = determineLeastChosenNumber(numberDistribution);
+      
+      console.log(`Secret winner calculated for round ${roundId}: ${winningNumber}`);
+      console.log('Bet distribution:', numberDistribution);
+      
+      return winningNumber;
+
+    } catch (error) {
+      console.error('Failed to calculate secret winner:', error);
+      return Math.floor(Math.random() * 10); // Fallback random
+    }
+  }
+
+  startCountdownTimer(roundId, duration) {
+    let timeRemaining = duration;
+    
+    const countdownInterval = setInterval(() => {
+      io.emit('countdown_update', {
+        roundId,
+        timeRemaining,
+        phase: 'countdown'
+      });
+      
+      timeRemaining--;
+      
+      if (timeRemaining < 0) {
+        clearInterval(countdownInterval);
+      }
+    }, 1000);
+  }
+
+  async startSpinning(roundId) {
+    try {
+      // COUNTDOWN -> SPINNING: Start wheel animation
+      const result = await pool.query(`
+        UPDATE game_rounds SET status = 'spinning', spin_start_time = NOW()
+        WHERE id = $1 RETURNING *
+      `, [roundId]);
+
+      const round = result.rows[0];
+      
+      // Get the pre-calculated winner
+      const winningNumber = roundWinners.get(roundId);
+      
+      // Emit spinning phase with winner number (for animation targeting)
+      io.emit('round_update', { ...round, status: 'spinning' });
+      io.emit('spin_start', { 
+        roundId, 
+        winningNumber, // Frontend needs this to animate wheel to correct position
+        duration: gameConfig.spinDuration 
+      });
+      
+      // After spinning animation, reveal results
+      setTimeout(() => {
+        this.revealResults(roundId);
+      }, gameConfig.spinDuration * 1000);
+
+      console.log(`Round ${round.round_number} - SPINNING phase (targeting: ${winningNumber})`);
+
+    } catch (error) {
+      console.error('Failed to start spinning:', error);
+    }
+  }
+
+  async revealResults(roundId) {
+    try {
+      // SPINNING -> RESULT: Reveal winner and process payouts
+      const winningNumber = roundWinners.get(roundId);
       const winningColor = getNumberColor(winningNumber);
       const isWinningOdd = winningNumber % 2 === 1;
+      
+      // Get all bets for this round
+      const betsResult = await pool.query('SELECT * FROM bets WHERE round_id = $1 AND status = $2', [roundId, 'pending']);
+      const bets = betsResult.rows;
 
       let totalBetAmount = 0;
       let totalPayout = 0;
+      const winningUsers = new Set();
 
-      // Process each bet
+      // Process each bet and calculate payouts
       for (const bet of bets) {
         totalBetAmount += parseFloat(bet.amount);
         
@@ -320,13 +390,13 @@ class GameEngine {
         const isWinner = payout > 0;
         totalPayout += payout;
 
-        // Update bet
+        // Update bet status
         await pool.query(`
           UPDATE bets SET is_winner = $1, actual_payout = $2, status = $3, settled_at = NOW()
           WHERE id = $4
         `, [isWinner, payout, isWinner ? 'won' : 'lost', bet.id]);
 
-        // Update user balance if they won
+        // INSTANTLY credit winner's balance
         if (isWinner) {
           await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [payout, bet.user_id]);
           
@@ -334,16 +404,25 @@ class GameEngine {
           await pool.query(`
             INSERT INTO transactions (user_id, type, amount, status, description)
             VALUES ($1, 'bet_won', $2, 'completed', $3)
-          `, [bet.user_id, payout, `Won bet on round ${round.round_number}`]);
+          `, [bet.user_id, payout, `Won bet on round ${this.roundCounter}`]);
+
+          winningUsers.add(bet.user_id);
+          
+          // Emit balance update to specific user
+          io.emit('balance_update', { 
+            userId: bet.user_id, 
+            payout: payout,
+            betAmount: parseFloat(bet.amount)
+          });
         }
       }
 
       const houseProfitLoss = totalBetAmount - totalPayout;
 
-      // Update round
+      // Update round with final results
       const completedResult = await pool.query(`
         UPDATE game_rounds SET 
-          status = 'completed',
+          status = 'result',
           result_time = NOW(),
           winning_number = $1,
           winning_color = $2,
@@ -352,33 +431,65 @@ class GameEngine {
           total_payout = $5,
           house_profit_loss = $6
         WHERE id = $7 RETURNING *
-      `, [winningNumber, winningColor, isWinningOdd, totalBetAmount, totalPayout, houseProfitLoss, round.id]);
+      `, [winningNumber, winningColor, isWinningOdd, totalBetAmount, totalPayout, houseProfitLoss, roundId]);
 
       const completedRound = completedResult.rows[0];
       
+      // Emit results to all clients
       io.emit('round_update', completedRound);
       io.emit('round_result', {
-        roundId: round.id,
+        roundId,
         winningNumber,
         winningColor,
-        isWinningOdd
+        isWinningOdd,
+        totalPayout,
+        houseProfitLoss
       });
 
-      // Start result phase
+      // Notify winning users
+      winningUsers.forEach(userId => {
+        io.emit('user_won', { userId, roundNumber: this.roundCounter });
+      });
+
+      // Clean up stored winner
+      roundWinners.delete(roundId);
+      
+      // Start result display phase (10s)
       setTimeout(() => {
-        if (gameRunning) {
-          this.startNewRound();
-        }
+        this.completeRound(roundId);
       }, gameConfig.resultDuration * 1000);
 
-      this.startTimerUpdates(round.id, 'result', gameConfig.resultDuration);
+      this.startTimerUpdates(roundId, 'result', gameConfig.resultDuration);
       
-      console.log(`Completed round ${round.round_number}, winning number: ${winningNumber}`);
+      console.log(`Round ${this.roundCounter} - RESULT phase: Winner ${winningNumber}, Payout ₹${totalPayout}, House P/L ₹${houseProfitLoss}`);
 
+    } catch (error) {
+      console.error('Failed to reveal results:', error);
+    }
+  }
+
+  async completeRound(roundId) {
+    try {
+      // Mark round as completed and start new round
+      await pool.query(`
+        UPDATE game_rounds SET status = 'completed' WHERE id = $1
+      `, [roundId]);
+      
+      console.log(`Round completed: ${roundId}`);
+      
+      // Start next round immediately
+      if (gameRunning) {
+        setTimeout(() => {
+          this.startNewRound();
+        }, 2000); // 2 second gap between rounds
+      }
+      
     } catch (error) {
       console.error('Failed to complete round:', error);
     }
   }
+
+
 
   startTimerUpdates(roundId, phase, duration) {
     const startTime = Date.now();
@@ -407,7 +518,15 @@ class GameEngine {
       const round = roundResult.rows[0];
 
       if (!round || round.status !== 'betting') {
-        throw new Error('Betting is not available for this round');
+        if (round && round.status === 'countdown') {
+          throw new Error('Betting is closed! Results are being calculated.');
+        } else if (round && round.status === 'spinning') {
+          throw new Error('Wheel is spinning! Wait for the next round.');
+        } else if (round && round.status === 'result') {
+          throw new Error('Round completed! Next round starting soon.');
+        } else {
+          throw new Error('Betting is not available for this round');
+        }
       }
 
       if (new Date() > new Date(round.betting_end_time)) {
