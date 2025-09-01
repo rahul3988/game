@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Win5x - Roulette Casino Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <h2>Loading Win5x...</h2>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="logo">
+                    <i class="fas fa-dice"></i>
+                    <h1>Win5x</h1>
+                </div>
+                <p>Roulette Casino Game</p>
+            </div>
+            
+            <div class="auth-form">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+                    <button class="auth-tab" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="login-form" class="form-container">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="login-username" placeholder="Enter username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-input">
+                            <input type="password" id="login-password" placeholder="Enter password" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('login-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
+                    </button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="register-form" class="form-container hidden">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="register-username" placeholder="Choose username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="register-email" placeholder="Enter email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-input">
+                            <input type="password" id="register-password" placeholder="Create password" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword('register-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        Create Account
+                    </button>
+                </form>
+
+                <div class="demo-credentials">
+                    <p>Demo Credentials:</p>
+                    <code>testuser1 / Test123!</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Screen -->
+    <div id="game-screen" class="game-screen hidden">
+        <!-- Header -->
+        <header class="game-header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-dice"></i>
+                    <h1>Win5x</h1>
+                </div>
+                <div class="connection-status">
+                    <div id="connection-indicator" class="connection-dot"></div>
+                    <span id="connection-text">Connecting...</span>
+                </div>
+            </div>
+            
+            <div class="header-center">
+                <div class="round-info">
+                    <div class="round-number">Round #<span id="round-number">-</span></div>
+                    <div class="game-phase" id="game-phase">Waiting...</div>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <div class="balance-info">
+                    <div class="balance">
+                        <i class="fas fa-wallet"></i>
+                        <span id="user-balance">₹0</span>
+                    </div>
+                    <div class="game-credit" id="game-credit-container" style="display: none;">
+                        <i class="fas fa-gift"></i>
+                        <span id="game-credit">₹0</span>
+                    </div>
+                    <div class="balance-actions">
+                        <button class="btn btn-sm btn-success" onclick="showDepositModal()">
+                            <i class="fas fa-plus"></i> Deposit
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="showWithdrawModal()">
+                            <i class="fas fa-minus"></i> Withdraw
+                        </button>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <button class="user-avatar" onclick="toggleUserMenu()">
+                        <span id="user-initial">U</span>
+                    </button>
+                    <div id="user-dropdown" class="user-dropdown hidden">
+                        <a href="#" onclick="showProfile()">Profile</a>
+                        <a href="#" onclick="showTransactions()">Transactions</a>
+                        <a href="#" onclick="showLeaderboard()">Leaderboard</a>
+                        <hr>
+                        <a href="#" onclick="logout()">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Game Area -->
+        <main class="game-main">
+            <!-- Left Sidebar - Live Activity -->
+            <aside class="live-activity">
+                <div class="activity-header">
+                    <h3><i class="fas fa-users"></i> Live Players</h3>
+                    <div class="viewer-count">
+                        <span id="viewer-count">0</span>
+                        <i id="viewer-trend" class="fas fa-arrow-up"></i>
+                    </div>
+                </div>
+                
+                <div class="activity-feed" id="activity-feed">
+                    <!-- Dynamic activity items -->
+                </div>
+
+                <div class="activity-stats">
+                    <div class="stat">
+                        <label>Peak Today</label>
+                        <span id="peak-viewers">0</span>
+                    </div>
+                    <div class="stat">
+                        <label>Total Bets</label>
+                        <span id="total-bets">0</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center - Game Wheel and Timer -->
+            <section class="game-center">
+                <!-- Timer Display -->
+                <div class="timer-container">
+                    <div class="timer-card" id="timer-card">
+                        <div class="timer-icon">
+                            <i id="timer-icon" class="fas fa-clock"></i>
+                        </div>
+                        <div class="timer-info">
+                            <h3 id="timer-title">Place Your Bets</h3>
+                            <div class="timer-display">
+                                <span id="timer-value">30</span>
+                                <div class="timer-progress">
+                                    <div id="timer-progress-bar" class="timer-progress-fill"></div>
+                                </div>
+                            </div>
+                            <p id="timer-description">Select chips and place your bets</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roulette Wheel -->
+                <div class="wheel-container">
+                    <div class="wheel-pointer"></div>
+                    <div id="roulette-wheel" class="roulette-wheel">
+                        <!-- Wheel segments will be generated by JavaScript -->
+                    </div>
+                    <div class="wheel-center">
+                        <div class="center-logo">
+                            <i class="fas fa-dice"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Winning Number Display -->
+                <div id="winning-display" class="winning-display hidden">
+                    <div class="winning-number">
+                        <span id="winning-number">7</span>
+                    </div>
+                    <div class="winning-details">
+                        <span id="winning-color">Red</span> • 
+                        <span id="winning-parity">Odd</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Sidebar - Betting Interface -->
+            <aside class="betting-panel">
+                <!-- Chip Selection -->
+                <div class="chip-selection">
+                    <h3>Select Chip Value</h3>
+                    <div class="chips-grid">
+                        <button class="chip chip-10" data-value="10" onclick="selectChip(10)">₹10</button>
+                        <button class="chip chip-20" data-value="20" onclick="selectChip(20)">₹20</button>
+                        <button class="chip chip-50" data-value="50" onclick="selectChip(50)">₹50</button>
+                        <button class="chip chip-100" data-value="100" onclick="selectChip(100)">₹100</button>
+                        <button class="chip chip-200" data-value="200" onclick="selectChip(200)">₹200</button>
+                        <button class="chip chip-500" data-value="500" onclick="selectChip(500)">₹500</button>
+                    </div>
+                    
+                    <!-- Custom Amount -->
+                    <div class="custom-bet">
+                        <button id="custom-bet-btn" class="btn btn-outline" onclick="showCustomBet()">
+                            <i class="fas fa-edit"></i> Custom Amount
+                        </button>
+                        <div id="custom-bet-input" class="custom-input hidden">
+                            <div class="input-group">
+                                <span>₹</span>
+                                <input type="number" id="custom-amount" placeholder="10-10000" min="10" max="10000">
+                                <button onclick="setCustomAmount()"><i class="fas fa-check"></i></button>
+                                <button onclick="cancelCustomAmount()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Betting Board -->
+                <div class="betting-board">
+                    <h3>Place Your Bets</h3>
+                    
+                    <!-- Numbers Grid -->
+                    <div class="numbers-section">
+                        <h4>Numbers (5x Payout)</h4>
+                        <div class="numbers-grid">
+                            <!-- Numbers 0-9 will be generated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Colors and Parity -->
+                    <div class="special-bets">
+                        <div class="colors-section">
+                            <h4>Colors (5x Payout)</h4>
+                            <div class="colors-grid">
+                                <button class="bet-btn color-red" data-type="color" data-value="red" onclick="placeBet('color', 'red')">
+                                    RED
+                                    <span class="bet-amount" id="bet-color-red">₹0</span>
+                                </button>
+                                <button class="bet-btn color-black" data-type="color" data-value="black" onclick="placeBet('color', 'black')">
+                                    BLACK
+                                    <span class="bet-amount" id="bet-color-black">₹0</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="parity-section">
+                            <h4>Parity (5x Payout)</h4>
+                            <div class="parity-grid">
+                                <button class="bet-btn parity-odd" data-type="odd_even" data-value="odd" onclick="placeBet('odd_even', 'odd')">
+                                    ODD
+                                    <span class="bet-amount" id="bet-odd_even-odd">₹0</span>
+                                </button>
+                                <button class="bet-btn parity-even" data-type="odd_even" data-value="even" onclick="placeBet('odd_even', 'even')">
+                                    EVEN
+                                    <span class="bet-amount" id="bet-odd_even-even">₹0</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Betting Summary -->
+                <div class="betting-summary">
+                    <div class="summary-row">
+                        <span>Total Bet:</span>
+                        <span id="total-bet-amount">₹0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Potential Win:</span>
+                        <span id="potential-payout" class="text-success">₹0</span>
+                    </div>
+                </div>
+
+                <!-- Game Controls -->
+                <div class="game-controls">
+                    <button class="btn btn-warning" onclick="clearAllBets()" id="clear-btn">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                    <button class="btn btn-secondary" onclick="undoLastBet()" id="undo-btn">
+                        <i class="fas fa-undo"></i> Undo
+                    </button>
+                    <button class="btn btn-success" onclick="rebetLast()" id="rebet-btn">
+                        <i class="fas fa-redo"></i> Rebet
+                    </button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Deposit Modal -->
+    <div id="deposit-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Deposit Funds</h3>
+                <button class="modal-close" onclick="closeModal('deposit-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="deposit-step-1" class="deposit-step">
+                    <h4>Select Payment Method</h4>
+                    <div class="payment-methods" id="payment-methods">
+                        <!-- Payment methods will be loaded dynamically -->
+                    </div>
+                </div>
+                
+                <div id="deposit-step-2" class="deposit-step hidden">
+                    <h4>Enter Amount</h4>
+                    <div class="amount-input">
+                        <span>₹</span>
+                        <input type="number" id="deposit-amount" placeholder="Enter amount" min="10">
+                    </div>
+                    <div class="qr-code-section" id="qr-code-section">
+                        <img id="qr-code-image" src="" alt="Payment QR Code">
+                        <p id="payment-instructions"></p>
+                    </div>
+                    <button class="btn btn-primary" onclick="proceedToUTR()">Continue to UTR Entry</button>
+                </div>
+                
+                <div id="deposit-step-3" class="deposit-step hidden">
+                    <h4>Enter UTR Code</h4>
+                    <div class="utr-input">
+                        <label>Transaction Reference (UTR)</label>
+                        <input type="text" id="utr-code" placeholder="Enter UTR from your payment app" maxlength="50">
+                        <small>Find this in your payment app's transaction history</small>
+                    </div>
+                    <button class="btn btn-success" onclick="submitDeposit()">
+                        <i class="fas fa-check"></i> Submit Deposit Request
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notifications" class="notifications-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/payment.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/fakeActivity.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
